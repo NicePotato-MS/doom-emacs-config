@@ -6,7 +6,7 @@
 
 ;; meow :3
 (setq doom-theme 'doom-dark+)
-(setq display-line-numbers-type t) ; nil: off, t: linear, relative: relative
+(setq display-line-numbers-type 'relative) ; nil: off, t: linear, relative: 'relative
 
 (setq-default tab-width 4
               evil-shift-width 4
@@ -44,7 +44,11 @@
 (setq +electric-continue-comments nil)
 
 ; do not hide the facts !!!!
-(add-hook! 'compilation-mode-hook #'visual-line-mode)
+(add-hook! 'compilation-mode-hook #'+word-wrap-mode)
+
+; to replace M-d M-d
+(use-package! auto-rename-tag
+  :hook ((web-mode nxml-mode mhtml-mode) . auto-rename-tag-mode))
 
 ; for your own selfish desires
 (load! "local")
@@ -89,7 +93,31 @@
 
 
 ; EW PYTHON I HATE PYTHON SCREW YOU PYTHON EWWWW
-(setq lsp-pyright-langserver-command "basedpyright")
+(setq python-shell-interpreter (expand-file-name "~/.venv/bin/python"))
+
+(after! lsp-pyright
+  (setq lsp-pyright-python-executable-cmd (expand-file-name "~/.venv/bin/python")
+        lsp-pyright-python-search-functions
+        '(lsp-pyright--locate-python-python)))
+
+(after! pyvenv
+  (when (file-executable-p (expand-file-name "~/.venv/bin/python"))
+    (pyvenv-activate (expand-file-name "~/.venv"))))
+
+(setq lsp-pyright-langserver-command "basedpyright"
+      lsp-pyright-multi-root nil
+      lsp-ruff-multi-root nil)
+
+(after! lsp-mode
+  (let* ((session (lsp-session))
+         (folders (lsp-session-server-id->folders session))
+         (changed nil))
+    (dolist (server-id '(ruff pyright pyright-remote))
+      (when (gethash server-id folders)
+        (remhash server-id folders)
+        (setq changed t)))
+    (when changed
+      (lsp--persist-session session))))
 
 ;; (after! eglot
 ;;   (add-to-list 'eglot-server-programs
@@ -103,11 +131,23 @@
                 "[/\\\\]\\.ruff_cache\\'"))
     (add-to-list 'lsp-file-watch-ignored-directories re)))
 
-(after! python
-  (set-formatter! 'ruff :modes '(python-mode python-ts-mode)))
+(after! apheleia
+  (setf (alist-get 'python-mode apheleia-mode-alist) '(ruff-isort ruff))
+  (setf (alist-get 'python-ts-mode apheleia-mode-alist) '(ruff-isort ruff)))
 
 (after! project
   (add-to-list 'project-vc-ignores "**/.venv/")
   (add-to-list 'project-vc-ignores "**/venv/")
   (add-to-list 'project-vc-ignores "**/__pycache__/")
   (add-to-list 'project-vc-ignores "**/.mypy_cache/"))
+
+
+;; give a standing ovation, for every rustacean !!!
+
+;; why is automatic import sorting a nightly feature
+(after! lsp-rust
+  (setq lsp-rust-analyzer-rustfmt-extra-args ["+nightly"]))
+
+(after! apheleia
+  (setf (alist-get 'rustfmt apheleia-formatters)
+        '("rustfmt" "+nightly" "--quiet" "--emit" "stdout")))

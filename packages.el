@@ -1,12 +1,13 @@
 ;; -*- no-byte-compile: t; -*-
 ;;; $DOOMDIR/packages.el
 
+(package! centered-cursor-mode)
+(package! auto-rename-tag)
+
 (package! odin-ts-mode
   :recipe (:host github :repo "Sampie159/odin-ts-mode"))
 
 (package! odin-mode :disable t)
-
-(package! centered-cursor-mode)
 
 ;; To install SOME-PACKAGE from MELPA, ELPA or emacsmirror:
 ;; (package! some-package)
